@@ -1,4 +1,5 @@
 import type { DashboardMetrics } from "@/domain/types/order";
+import TopSellingServices from "@/components/dashboard/TopSellingServices";
 import {
   BoxIconLine,
   DollarLineIcon,
@@ -71,6 +72,7 @@ export default function KpiCards({ metrics }: KpiCardsProps) {
           <DollarLineIcon className="size-6 text-gray-800 dark:text-white/90" />
         }
       />
+      <TopSellingServices services={metrics.topSellingServices} />
     </div>
   );
 }

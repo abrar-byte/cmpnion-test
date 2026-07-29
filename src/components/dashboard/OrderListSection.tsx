@@ -18,20 +18,25 @@ import {
   ErrorState,
 } from "@/components/dashboard/DataStates";
 import { useOrderFilters } from "@/hooks/useOrderFilters";
-import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrders";
+import { useOrders, useUpdateOrderStatus } from "@/services/orders/orders.query";
+import type { OrderPeriod } from "@/services/orders/orders.types";
 import {
   orderQueryService,
   slaService,
 } from "@/infrastructure/di/container";
 import {
+  formatServiceType,
   formatOrderTime,
+  formatOrderStatus,
+  formatPaymentStatus,
   getOrderStatusColor,
   getPaymentStatusColor,
 } from "@/utils/orderFormatters";
 import { useModal } from "@/hooks/useModal";
 
 export default function OrderListSection() {
-  const { data: orders, isLoading, isError, refetch } = useOrders();
+  const [period, setPeriod] = useState<OrderPeriod>("today");
+  const { data: orders, isLoading, isError, refetch } = useOrders(period);
   const updateStatus = useUpdateOrderStatus();
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -87,6 +92,8 @@ export default function OrderListSection() {
         onToggleServiceType={toggleServiceType}
         sortOrder={filters.sortOrder}
         onSortChange={setSortOrder}
+        period={period}
+        onPeriodChange={setPeriod}
         onClearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
       />
@@ -177,7 +184,7 @@ export default function OrderListSection() {
                         {order.roomNumber}
                       </TableCell>
                       <TableCell className="py-3 text-theme-sm text-gray-500 dark:text-gray-400">
-                        {order.serviceType}
+                        {formatServiceType(order.serviceType)}
                       </TableCell>
                       <TableCell className="py-3 text-theme-sm text-gray-500 dark:text-gray-400">
                         {order.quantity}
@@ -190,7 +197,7 @@ export default function OrderListSection() {
                           color={getOrderStatusColor(order.orderStatus)}
                           size="sm"
                         >
-                          {order.orderStatus}
+                          {formatOrderStatus(order.orderStatus)}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3">
@@ -198,7 +205,7 @@ export default function OrderListSection() {
                           color={getPaymentStatusColor(order.paymentStatus)}
                           size="sm"
                         >
-                          {order.paymentStatus}
+                          {formatPaymentStatus(order.paymentStatus)}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3">

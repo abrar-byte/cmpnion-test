@@ -5,12 +5,16 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import {
   formatCurrency,
+  formatOrderStatus,
   formatOrderTime,
+  formatPaymentStatus,
+  formatServiceType,
   getOrderStatusColor,
   getPaymentStatusColor,
 } from "@/utils/orderFormatters";
 import { orderService } from "@/infrastructure/di/container";
 import SlaIndicator from "@/components/dashboard/SlaIndicator";
+import { ORDER_CANCELLED_STATUS } from "@/data/constants";
 
 interface OrderDetailModalProps {
   order: Order | null;
@@ -39,7 +43,7 @@ export default function OrderDetailModal({
   const isFinal = orderService.isFinalStatus(order.orderStatus);
 
   const handleStatusClick = (status: OrderStatus) => {
-    if (status === "Cancelled") {
+    if (status === ORDER_CANCELLED_STATUS) {
       setShowCancelConfirm(true);
       return;
     }
@@ -47,7 +51,7 @@ export default function OrderDetailModal({
   };
 
   const confirmCancel = () => {
-    onStatusUpdate(order.id, "Cancelled");
+    onStatusUpdate(order.id, ORDER_CANCELLED_STATUS);
     setShowCancelConfirm(false);
   };
 
@@ -69,7 +73,7 @@ export default function OrderDetailModal({
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DetailItem label="Guest Name" value={order.guestName} />
           <DetailItem label="Room Number" value={order.roomNumber} />
-          <DetailItem label="Service Type" value={order.serviceType} />
+          <DetailItem label="Service Type" value={formatServiceType(order.serviceType)} />
           <DetailItem label="Quantity" value={String(order.quantity)} />
           <DetailItem label="Order Time" value={formatOrderTime(order.orderTime)} />
           <DetailItem label="Amount" value={formatCurrency(order.amount)} />
@@ -79,7 +83,7 @@ export default function OrderDetailModal({
             </dt>
             <dd className="mt-1">
               <Badge color={getOrderStatusColor(order.orderStatus)} size="sm">
-                {order.orderStatus}
+                {formatOrderStatus(order.orderStatus)}
               </Badge>
             </dd>
           </div>
@@ -89,7 +93,7 @@ export default function OrderDetailModal({
             </dt>
             <dd className="mt-1">
               <Badge color={getPaymentStatusColor(order.paymentStatus)} size="sm">
-                {order.paymentStatus}
+                {formatPaymentStatus(order.paymentStatus)}
               </Badge>
             </dd>
           </div>
@@ -116,16 +120,18 @@ export default function OrderDetailModal({
                 <Button
                   key={status}
                   size="sm"
-                  variant={status === "Cancelled" ? "outline" : "primary"}
+                  variant={
+                    status === ORDER_CANCELLED_STATUS ? "outline" : "primary"
+                  }
                   disabled={isUpdating}
                   onClick={() => handleStatusClick(status)}
                   className={
-                    status === "Cancelled"
+                    status === ORDER_CANCELLED_STATUS
                       ? "text-error-600 ring-error-300 hover:bg-error-50 dark:text-error-400"
                       : ""
                   }
                 >
-                  {status}
+                  {formatOrderStatus(status)}
                 </Button>
               ))}
             </div>

@@ -1,3 +1,4 @@
+import { ACTIVE_STATUSES, ORDER_COMPLETED_STATUS } from "@/data/constants";
 import type { IDashboardMetricsService } from "@/domain/interfaces/IDashboardMetricsService";
 import type { DashboardMetrics, Order, ServiceType } from "@/domain/types/order";
 
@@ -13,12 +14,12 @@ const isToday = (isoDate: string) => {
 
 export class DashboardMetricsService implements IDashboardMetricsService {
   calculate(orders: Order[]): DashboardMetrics {
-    const activeStatuses = new Set(["New", "Acknowledged", "In Progress"]);
+    const activeStatuses = new Set(ACTIVE_STATUSES);
     const activeOrders = orders.filter((o) => activeStatuses.has(o.orderStatus));
     const activeGuestRooms = new Set(activeOrders.map((o) => o.roomNumber));
 
     const completedToday = orders.filter(
-      (o) => o.orderStatus === "Completed" && isToday(o.orderTime),
+      (o) => o.orderStatus === ORDER_COMPLETED_STATUS && isToday(o.orderTime),
     );
 
     const revenueToday = completedToday.reduce((sum, o) => sum + o.amount, 0);

@@ -1,12 +1,22 @@
 import type { IOrderStatusValidator } from "@/domain/interfaces/IOrderStatusValidator";
 import type { OrderStatus } from "@/domain/types/order";
+import {
+  ORDER_ACKNOWLEDGED_STATUS,
+  ORDER_CANCELLED_STATUS,
+  ORDER_COMPLETED_STATUS,
+  ORDER_IN_PROGRESS_STATUS,
+  ORDER_NEW_STATUS,
+} from "@/data/constants";
 
 const WORKFLOW: Record<OrderStatus, OrderStatus[]> = {
-  New: ["Acknowledged", "Cancelled"],
-  Acknowledged: ["In Progress", "Cancelled"],
-  "In Progress": ["Completed", "Cancelled"],
-  Completed: [],
-  Cancelled: [],
+  [ORDER_NEW_STATUS]: [ORDER_ACKNOWLEDGED_STATUS, ORDER_CANCELLED_STATUS],
+  [ORDER_ACKNOWLEDGED_STATUS]: [
+    ORDER_IN_PROGRESS_STATUS,
+    ORDER_CANCELLED_STATUS,
+  ],
+  [ORDER_IN_PROGRESS_STATUS]: [ORDER_COMPLETED_STATUS, ORDER_CANCELLED_STATUS],
+  [ORDER_COMPLETED_STATUS]: [],
+  [ORDER_CANCELLED_STATUS]: [],
 };
 
 export class OrderStatusValidator implements IOrderStatusValidator {
@@ -19,6 +29,8 @@ export class OrderStatusValidator implements IOrderStatusValidator {
   }
 
   isFinalStatus(status: OrderStatus): boolean {
-    return status === "Completed" || status === "Cancelled";
+    return (
+      status === ORDER_COMPLETED_STATUS || status === ORDER_CANCELLED_STATUS
+    );
   }
 }

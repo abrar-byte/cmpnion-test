@@ -1,23 +1,26 @@
+import { cn } from "@/utils";
+
 interface DataStateProps {
+  className?: string;
   title: string;
   description: string;
   action?: React.ReactNode;
 }
 
-export function LoadingState() {
+export function LoadingState({className, title="orders"}: {className?: string, title?: string}) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-16">
+    <div className={cn("flex flex-col items-center justify-center gap-4 py-16", className)}>
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500 dark:border-gray-700 dark:border-t-brand-400" />
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Loading orders...
+        Loading {title}...
       </p>
     </div>
   );
 }
 
-export function EmptyState({ title, description, action }: DataStateProps) {
+export function EmptyState({className, title, description, action }: DataStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className={cn("flex flex-col items-center justify-center gap-3 py-16 text-center", className)}>
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
         <svg
           className="size-6 text-gray-400"
@@ -44,9 +47,9 @@ export function EmptyState({ title, description, action }: DataStateProps) {
   );
 }
 
-export function ErrorState({ title, description, action }: DataStateProps) {
+export function ErrorState({className, title, description, action }: DataStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className={cn("flex flex-col items-center justify-center gap-3 py-16 text-center", className)}>
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error-50 dark:bg-error-500/15">
         <svg
           className="size-6 text-error-500"

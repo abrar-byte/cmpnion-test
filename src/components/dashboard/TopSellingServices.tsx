@@ -1,5 +1,6 @@
 import type { DashboardMetrics } from "@/domain/types/order";
 import Badge from "@/components/ui/badge/Badge";
+import { formatServiceType } from "@/utils/orderFormatters";
 
 interface TopSellingServicesProps {
   services: DashboardMetrics["topSellingServices"];
@@ -29,7 +30,7 @@ export default function TopSellingServices({
                   {index + 1}
                 </span>
                 <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {item.serviceType}
+                  {formatServiceType(item.serviceType)}
                 </span>
               </div>
               <Badge color="primary" size="sm">
