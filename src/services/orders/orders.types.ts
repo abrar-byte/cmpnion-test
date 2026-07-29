@@ -1,3 +1,4 @@
+import type { OrderPeriod } from "@/utils";
 import type {
   Order,
   OrderStatus,
@@ -18,6 +19,7 @@ export type {
 
 export interface OrderCustomerRow {
   name: string;
+  room_number: string | null;
 }
 
 export interface OrderRow {
@@ -30,7 +32,6 @@ export interface OrderRow {
   order_time: string;
   status: OrderStatus;
   payment_status: PaymentStatus;
-  room_number: string;
   customers: OrderCustomerRow | OrderCustomerRow[] | null;
 }
 
@@ -42,4 +43,26 @@ export type UpdateOrderInput = Partial<
   Omit<Order, "id" | "guestName"> & { customerId: string }
 >;
 
-export type { OrderPeriod } from "@/utils";
+export type { OrderPeriod };
+
+export type OrdersQueryParams = {
+  take?: number;
+  page?: number;
+  sort?: string;
+  search?: string;
+  period?: OrderPeriod;
+  statuses?: OrderStatus[];
+  services?: ServiceType[];
+};
+
+export type OrdersListMeta = {
+  count: number;
+  take: number;
+  page: number;
+  pageCount: number;
+};
+
+export type OrdersListResult = {
+  data: Order[];
+  meta: OrdersListMeta;
+};

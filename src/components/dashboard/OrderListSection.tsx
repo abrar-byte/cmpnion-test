@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import type { Order, OrderStatus } from "@/domain/types/order";
+import { useEffect, useMemo, useState } from "react";
+import debounce from "debounce";
+import type { Order, OrderStatus, PaymentStatus } from "@/domain/types/order";
 import {
   Table,
   TableBody,
@@ -11,6 +12,7 @@ import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import OrderFiltersBar from "@/components/dashboard/OrderFiltersBar";
 import OrderDetailModal from "@/components/dashboard/OrderDetailModal";
+import OrdersPagination from "@/components/dashboard/OrdersPagination";
 import SlaIndicator from "@/components/dashboard/SlaIndicator";
 import {
   LoadingState,
@@ -18,12 +20,12 @@ import {
   ErrorState,
 } from "@/components/dashboard/DataStates";
 import { useOrderFilters } from "@/hooks/useOrderFilters";
-import { useOrders, useUpdateOrderStatus } from "@/services/orders/orders.query";
-import type { OrderPeriod } from "@/services/orders/orders.types";
 import {
-  orderQueryService,
-  slaService,
-} from "@/infrastructure/di/container";
+  useOrdersList,
+  useUpdateOrder,
+  useUpdateOrderStatus,
+} from "@/services/orders/orders.query";
+import { slaService } from "@/infrastructure/di/container";
 import {
   formatServiceType,
   formatOrderTime,
@@ -34,10 +36,26 @@ import {
 } from "@/utils/orderFormatters";
 import { useModal } from "@/hooks/useModal";
 
+const PAGE_SIZE = 10;
+
+function getQueryErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return "Something went wrong while fetching orders. Please try again.";
+}
+
 export default function OrderListSection() {
-  const [period, setPeriod] = useState<OrderPeriod>("today");
-  const { data: orders, isLoading, isError, refetch } = useOrders(period);
+  const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const updateStatus = useUpdateOrderStatus();
+  const updateOrder = useUpdateOrder();
   const { isOpen, openModal, closeModal } = useModal();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -53,10 +71,54 @@ export default function OrderListSection() {
     serviceTypeOptions,
   } = useOrderFilters();
 
-  const filteredOrders = useMemo(
-    () => (orders ? orderQueryService.filterOrders(orders, filters) : []),
-    [orders, filters],
+  const debouncedSetSearch = useMemo(
+    () => debounce((value: string) => setDebouncedSearch(value), 400),
+    [],
   );
+
+  useEffect(() => () => debouncedSetSearch.clear(), [debouncedSetSearch]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    debouncedSetSearch(value);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    debouncedSetSearch.clear();
+    setDebouncedSearch("");
+    clearFilters();
+  };
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filters.orderStatuses, filters.serviceTypes, filters.sortOrder]);
+
+  const hasSearch = Boolean(debouncedSearch.trim());
+
+  const queryParams = useMemo(
+    () => ({
+      take: PAGE_SIZE,
+      page,
+      search: hasSearch ? debouncedSearch.trim() : undefined,
+      statuses:
+        !hasSearch && filters.orderStatuses.length > 0
+          ? filters.orderStatuses
+          : undefined,
+      services:
+        !hasSearch && filters.serviceTypes.length > 0
+          ? filters.serviceTypes
+          : undefined,
+      sort: filters.sortOrder === "newest" ? "-order_time" : "order_time",
+    }),
+    [page, debouncedSearch, hasSearch, filters.orderStatuses, filters.serviceTypes, filters.sortOrder],
+  );
+
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    useOrdersList(queryParams);
+
+  const orders = data?.data ?? [];
+  const meta = data?.meta;
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -74,6 +136,20 @@ export default function OrderListSection() {
     );
   };
 
+  const handlePaymentStatusUpdate = (
+    id: string,
+    paymentStatus: PaymentStatus,
+  ) => {
+    updateOrder.mutate(
+      { id, updates: { paymentStatus } },
+      {
+        onSuccess: (updated) => {
+          setSelectedOrder(updated);
+        },
+      },
+    );
+  };
+
   const handleCloseModal = () => {
     closeModal();
     setSelectedOrder(null);
@@ -83,7 +159,7 @@ export default function OrderListSection() {
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-4 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <OrderFiltersBar
         search={filters.search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         orderStatuses={filters.orderStatuses}
         serviceTypes={filters.serviceTypes}
         orderStatusOptions={orderStatusOptions}
@@ -92,26 +168,24 @@ export default function OrderListSection() {
         onToggleServiceType={toggleServiceType}
         sortOrder={filters.sortOrder}
         onSortChange={setSortOrder}
-        period={period}
-        onPeriodChange={setPeriod}
-        onClearFilters={clearFilters}
+        onClearFilters={handleClearFilters}
         hasActiveFilters={hasActiveFilters}
       />
 
       <div className="mt-4">
-        {isLoading && !orders ? (
+        {isLoading && !data ? (
           <LoadingState />
         ) : isError ? (
           <ErrorState
             title="Failed to load orders"
-            description="Something went wrong while fetching orders. Please try again."
+            description={getQueryErrorMessage(error)}
             action={
               <Button size="sm" onClick={() => refetch()}>
                 Retry
               </Button>
             }
           />
-        ) : filteredOrders.length === 0 ? (
+        ) : orders.length === 0 ? (
           <EmptyState
             title="No orders found"
             description={
@@ -121,40 +195,44 @@ export default function OrderListSection() {
             }
             action={
               hasActiveFilters ? (
-                <Button size="sm" variant="outline" onClick={clearFilters}>
+                <Button size="sm" variant="outline" onClick={handleClearFilters}>
                   Clear Filters
                 </Button>
               ) : undefined
             }
           />
         ) : (
-          <div className="max-w-full overflow-x-auto">
-            <Table>
-              <TableHeader className="border-y border-gray-100 dark:border-gray-800">
-                <TableRow>
-                  {[
-                    "Order ID",
-                    "Guest",
-                    "Room",
-                    "Service",
-                    "Qty",
-                    "Order Time",
-                    "Status",
-                    "Payment",
-                    "",
-                  ].map((header) => (
-                    <TableCell
-                      key={header}
-                      isHeader
-                      className="py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                    >
-                      {header}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredOrders.map((order) => {
+          <>
+            {isFetching && (
+              <p className="mb-2 text-theme-xs text-gray-400">Updating...</p>
+            )}
+            <div className="max-w-full overflow-x-auto">
+              <Table>
+                <TableHeader className="border-y border-gray-100 dark:border-gray-800">
+                  <TableRow>
+                    {[
+                      "Order ID",
+                      "Guest",
+                      "Room",
+                      "Service",
+                      "Qty",
+                      "Order Time",
+                      "Status",
+                      "Payment",
+                      "",
+                    ].map((header) => (
+                      <TableCell
+                        key={header}
+                        isHeader
+                        className="py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                      >
+                        {header}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {orders.map((order) => {
                   const overdue = slaService.isOverdue(order);
                   return (
                     <TableRow
@@ -220,9 +298,17 @@ export default function OrderListSection() {
                     </TableRow>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
+            {meta && (
+              <OrdersPagination
+                currentPage={meta.page}
+                totalPages={meta.pageCount}
+                onPageChange={setPage}
+              />
+            )}
+          </>
         )}
       </div>
 
@@ -231,7 +317,8 @@ export default function OrderListSection() {
         isOpen={isOpen}
         onClose={handleCloseModal}
         onStatusUpdate={handleStatusUpdate}
-        isUpdating={updateStatus.isPending}
+        onPaymentStatusUpdate={handlePaymentStatusUpdate}
+        isUpdating={updateStatus.isPending || updateOrder.isPending}
         isOverdue={selectedOrder ? slaService.isOverdue(selectedOrder) : false}
         overdueMinutes={
           selectedOrder ? slaService.getOverdueMinutes(selectedOrder) : 0

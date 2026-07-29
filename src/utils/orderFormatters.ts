@@ -83,3 +83,22 @@ export function formatOrderStatus(status: OrderStatus): string {
 export function formatPaymentStatus(status: PaymentStatus): string {
   return PAYMENT_STATUS_LABELS[status];
 }
+
+export function getAvailablePaymentTransitions(
+  current: PaymentStatus,
+): PaymentStatus[] {
+  switch (current) {
+    case PAYMENT_PENDING_STATUS:
+      return [PAYMENT_PAID_STATUS, PAYMENT_FAILED_STATUS];
+    case PAYMENT_PAID_STATUS:
+      return [PAYMENT_FAILED_STATUS];
+    case PAYMENT_FAILED_STATUS:
+      return [PAYMENT_PAID_STATUS];
+    default:
+      return [];
+  }
+}
+
+export function requiresPaymentConfirmation(status: PaymentStatus): boolean {
+  return status === PAYMENT_PAID_STATUS || status === PAYMENT_FAILED_STATUS;
+}

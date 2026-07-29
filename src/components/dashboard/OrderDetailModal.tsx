@@ -1,6 +1,12 @@
-import { useState } from "react";
-import type { Order, OrderStatus } from "@/domain/types/order";
-import { Modal } from "@/components/ui/modal";
+import { toast } from "sonner";
+import type { Order, OrderStatus, PaymentStatus } from "@/domain/types/order";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import {
@@ -9,18 +15,24 @@ import {
   formatOrderTime,
   formatPaymentStatus,
   formatServiceType,
+  getAvailablePaymentTransitions,
   getOrderStatusColor,
   getPaymentStatusColor,
+  requiresPaymentConfirmation,
 } from "@/utils/orderFormatters";
 import { orderService } from "@/infrastructure/di/container";
 import SlaIndicator from "@/components/dashboard/SlaIndicator";
-import { ORDER_CANCELLED_STATUS } from "@/data/constants";
+import {
+  ORDER_CANCELLED_STATUS,
+  PAYMENT_PAID_STATUS,
+} from "@/data/constants";
 
 interface OrderDetailModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
   onStatusUpdate: (id: string, status: OrderStatus) => void;
+  onPaymentStatusUpdate: (id: string, paymentStatus: PaymentStatus) => void;
   isUpdating: boolean;
   isOverdue: boolean;
   overdueMinutes: number;
@@ -31,134 +43,181 @@ export default function OrderDetailModal({
   isOpen,
   onClose,
   onStatusUpdate,
+  onPaymentStatusUpdate,
   isUpdating,
   isOverdue,
   overdueMinutes,
 }: OrderDetailModalProps) {
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
 
   if (!order) return null;
 
   const transitions = orderService.getAvailableTransitions(order.orderStatus);
   const isFinal = orderService.isFinalStatus(order.orderStatus);
+  const paymentOptions = getAvailablePaymentTransitions(order.paymentStatus);
 
   const handleStatusClick = (status: OrderStatus) => {
     if (status === ORDER_CANCELLED_STATUS) {
-      setShowCancelConfirm(true);
+      toast.warning("Cancel this order?", {
+        description:
+          "This action cannot be undone. The order will be marked as cancelled.",
+        action: {
+          label: "Confirm",
+          onClick: () => onStatusUpdate(order.id, ORDER_CANCELLED_STATUS),
+        },
+        cancel: {
+          label: "Go back",
+          onClick: () => {},
+        },
+      });
       return;
     }
     onStatusUpdate(order.id, status);
   };
 
-  const confirmCancel = () => {
-    onStatusUpdate(order.id, ORDER_CANCELLED_STATUS);
-    setShowCancelConfirm(false);
+  const handlePaymentStatusClick = (status: PaymentStatus) => {
+    if (!requiresPaymentConfirmation(status)) {
+      onPaymentStatusUpdate(order.id, status);
+      return;
+    }
+
+    const isPaid = status === PAYMENT_PAID_STATUS;
+    const title = isPaid
+      ? "Mark this order as paid?"
+      : "Mark this order payment as failed?";
+    const description = `Payment status will be updated to ${formatPaymentStatus(status)}.`;
+
+    toast.warning(title, {
+      description,
+      action: {
+        label: "Confirm",
+        onClick: () => onPaymentStatusUpdate(order.id, status),
+      },
+      cancel: {
+        label: "Go back",
+        onClick: () => {},
+      },
+    });
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg p-6 m-4">
-      <div className="space-y-5">
-        <div className="flex items-start justify-between pr-8">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-              Order Details
-            </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {order.id}
-            </p>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange} modal={false}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-start justify-between pr-8">
+            <div>
+              <DialogTitle>Order Details</DialogTitle>
+              <DialogDescription>{order.id}</DialogDescription>
+            </div>
+            {isOverdue && <SlaIndicator overdueMinutes={overdueMinutes} />}
           </div>
-          {isOverdue && <SlaIndicator overdueMinutes={overdueMinutes} />}
-        </div>
+        </DialogHeader>
 
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DetailItem label="Guest Name" value={order.guestName} />
-          <DetailItem label="Room Number" value={order.roomNumber} />
-          <DetailItem label="Service Type" value={formatServiceType(order.serviceType)} />
-          <DetailItem label="Quantity" value={String(order.quantity)} />
-          <DetailItem label="Order Time" value={formatOrderTime(order.orderTime)} />
-          <DetailItem label="Amount" value={formatCurrency(order.amount)} />
-          <div>
-            <dt className="text-xs text-gray-500 dark:text-gray-400">
-              Order Status
-            </dt>
-            <dd className="mt-1">
-              <Badge color={getOrderStatusColor(order.orderStatus)} size="sm">
-                {formatOrderStatus(order.orderStatus)}
-              </Badge>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-gray-500 dark:text-gray-400">
-              Payment Status
-            </dt>
-            <dd className="mt-1">
-              <Badge color={getPaymentStatusColor(order.paymentStatus)} size="sm">
-                {formatPaymentStatus(order.paymentStatus)}
-              </Badge>
-            </dd>
-          </div>
-        </dl>
-
-        {order.specialRequest && (
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Special Request
-            </p>
-            <p className="mt-1 text-sm text-gray-800 dark:text-white/90">
-              {order.specialRequest}
-            </p>
-          </div>
-        )}
-
-        {!isFinal && transitions.length > 0 && (
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase text-gray-400">
-              Update Status
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {transitions.map((status) => (
-                <Button
-                  key={status}
+        <div className="space-y-5">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <DetailItem label="Guest Name" value={order.guestName} />
+            <DetailItem label="Room Number" value={order.roomNumber} />
+            <DetailItem
+              label="Service Type"
+              value={formatServiceType(order.serviceType)}
+            />
+            <DetailItem label="Quantity" value={String(order.quantity)} />
+            <DetailItem
+              label="Order Time"
+              value={formatOrderTime(order.orderTime)}
+            />
+            <DetailItem label="Amount" value={formatCurrency(order.amount)} />
+            <div>
+              <dt className="text-xs text-gray-500 dark:text-gray-400">
+                Order Status
+              </dt>
+              <dd className="mt-1">
+                <Badge color={getOrderStatusColor(order.orderStatus)} size="sm">
+                  {formatOrderStatus(order.orderStatus)}
+                </Badge>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500 dark:text-gray-400">
+                Payment Status
+              </dt>
+              <dd className="mt-1">
+                <Badge
+                  color={getPaymentStatusColor(order.paymentStatus)}
                   size="sm"
-                  variant={
-                    status === ORDER_CANCELLED_STATUS ? "outline" : "primary"
-                  }
-                  disabled={isUpdating}
-                  onClick={() => handleStatusClick(status)}
-                  className={
-                    status === ORDER_CANCELLED_STATUS
-                      ? "text-error-600 ring-error-300 hover:bg-error-50 dark:text-error-400"
-                      : ""
-                  }
                 >
-                  {formatOrderStatus(status)}
-                </Button>
-              ))}
+                  {formatPaymentStatus(order.paymentStatus)}
+                </Badge>
+              </dd>
             </div>
-          </div>
-        )}
+          </dl>
 
-        {showCancelConfirm && (
-          <div className="rounded-xl border border-error-200 bg-error-50 p-4 dark:border-error-500/30 dark:bg-error-500/10">
-            <p className="text-sm font-medium text-error-700 dark:text-error-400">
-              Are you sure you want to cancel this order?
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button size="sm" variant="primary" onClick={confirmCancel} disabled={isUpdating}>
-                Yes, Cancel Order
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCancelConfirm(false)}
-              >
-                No, Go Back
-              </Button>
+          {order.specialRequest && (
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Special Request
+              </p>
+              <p className="mt-1 text-sm text-gray-800 dark:text-white/90">
+                {order.specialRequest}
+              </p>
             </div>
-          </div>
-        )}
-      </div>
-    </Modal>
+          )}
+
+          {!isFinal && transitions.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase text-gray-400">
+                Update Status
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {transitions.map((status) => (
+                  <Button
+                    key={status}
+                    size="sm"
+                    variant={
+                      status === ORDER_CANCELLED_STATUS ? "outline" : "primary"
+                    }
+                    disabled={isUpdating}
+                    onClick={() => handleStatusClick(status)}
+                    className={
+                      status === ORDER_CANCELLED_STATUS
+                        ? "text-error-600 ring-error-300 hover:bg-error-50 dark:text-error-400"
+                        : ""
+                    }
+                  >
+                    {formatOrderStatus(status)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {paymentOptions.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase text-gray-400">
+                Update Payment Status
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {paymentOptions.map((status) => (
+                  <Button
+                    key={status}
+                    size="sm"
+                    variant="outline"
+                    disabled={isUpdating}
+                    onClick={() => handlePaymentStatusClick(status)}
+                  >
+                    {formatPaymentStatus(status)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

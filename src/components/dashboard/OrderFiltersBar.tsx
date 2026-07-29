@@ -1,5 +1,4 @@
 import type { OrderStatus, ServiceType } from "@/domain/types/order";
-import type { OrderPeriod } from "@/services/orders/orders.types";
 import {
   formatOrderStatus,
   formatServiceType,
@@ -18,8 +17,6 @@ interface OrderFiltersBarProps {
   onToggleServiceType: (type: ServiceType) => void;
   sortOrder: "newest" | "oldest";
   onSortChange: (value: "newest" | "oldest") => void;
-  period: OrderPeriod;
-  onPeriodChange: (value: OrderPeriod) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
 }
@@ -35,8 +32,6 @@ export default function OrderFiltersBar({
   onToggleServiceType,
   sortOrder,
   onSortChange,
-  period,
-  onPeriodChange,
   onClearFilters,
   hasActiveFilters,
 }: OrderFiltersBarProps) {
@@ -51,16 +46,6 @@ export default function OrderFiltersBar({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <select
-          value={period}
-          onChange={(e) => onPeriodChange(e.target.value as OrderPeriod)}
-          className="h-11 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        >
-          <option value="today">Today</option>
-          <option value="this_week">This Week</option>
-          <option value="this_month">This Month</option>
-          <option value="all">All Time</option>
-        </select>
         <select
           value={sortOrder}
           onChange={(e) =>

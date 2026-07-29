@@ -4,8 +4,6 @@ import { SERVICE_TYPES, type ServiceType } from "@/domain/types/order";
 import { ACTIVE_STATUSES, ORDER_COMPLETED_STATUS } from "@/data/constants";
 import { todayRange } from "@/utils";
 
-
-
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   try {
     const { start, end } = todayRange();

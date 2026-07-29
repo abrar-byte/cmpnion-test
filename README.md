@@ -1,204 +1,248 @@
-# TailAdmin React - Free React Tailwind Admin Dashboard Template
+# CMPNION Hotel Service Management Dashboard
 
-TailAdmin is a free and open-source admin dashboard template built on **React and Tailwind CSS**, providing developers
-with everything they need to create a comprehensive, data-driven back-end,
-dashboard, or admin panel solution for upcoming web projects.
+A web dashboard for hotel operational staff to monitor guest service requests, track KPIs, and manage orders from a single interface.
 
-With TailAdmin, you get access to all the necessary dashboard UI components, elements, and pages required to build a
-feature-rich and complete dashboard or admin panel. Whether you're building dashboard or admin panel for a complex web
-application or a simple website, TailAdmin is the perfect solution to help you get up and running quickly.
+## Project Overview
 
-![TailAdmin React.js Dashboard Preview](./banner.png)
+CMPNION helps front office, concierge, room service, and housekeeping teams respond to guest requests faster. The dashboard provides:
 
-## Overview
+- **Dashboard overview** — KPI cards (active guests, pending orders, revenue, completed orders, average order value, top-selling services) and charts for service volume and order status breakdown
+- **Order management** — searchable, filterable, sortable order list with pagination
+- **Order details** — view guest, room, service, and payment information
+- **Status workflow** — update orders through `NEW → ACKNOWLEDGED → IN_PROGRESS → COMPLETED` or `CANCELLED`
+- **SLA highlighting** — visual warning when an order exceeds the 15-minute threshold
+- **Authentication** — protected routes via Supabase Auth
 
-TailAdmin provides essential UI components and layouts for building feature-rich, data-driven admin dashboards and
-control panels. It's built on:
 
-- React 19
-- TypeScript
-- Tailwind CSS v4
+## Tech Stack
 
-### Quick Links
+| Layer | Technology |
+|-------|------------|
+| Runtime & package manager | [Bun](https://bun.sh) |
+| Framework | React 19 + TypeScript |
+| Build tool | Vite 6 |
+| Styling | Tailwind CSS v4 |
+| Routing | React Router 7 |
+| Server state | TanStack Query v5 |
+| Forms & validation | React Hook Form + Zod |
+| Backend / database | Supabase (PostgreSQL + Auth) |
+| Charts | ApexCharts |
 
-- [✨ Visit Website](https://tailadmin.com)
-- [📄 Documentation](https://tailadmin.com/docs)
-- [⬇️ Download](https://tailadmin.com/download)
-- [🖌️ Figma Design File (Community Edition)](https://www.figma.com/community/file/1214477970819985778)
-- [⚡ Get PRO Version](https://tailadmin.com/pricing)
+## Prerequisites
 
-### Demos
-
-- [Free Version](https://free-react-demo.tailadmin.com/)
-- [Pro Version](https://react-demo.tailadmin.com)
-
-### Other Versions
-
-- [HTML Version](https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
-- [Next.js Version](https://github.com/TailAdmin/free-nextjs-admin-dashboard)
-- [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
-- [Angular Version](https://github.com/TailAdmin/free-angular-tailwind-dashboard)
-- [Laravel Version](https://github.com/TailAdmin/tailadmin-laravel)
+- [Bun](https://bun.sh) 1.0 or later
+- A Supabase project with the required tables (`orders`, `customers`) and Auth enabled
 
 ## Installation
 
-### Prerequisites
-
-To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
-
-- Node.js 18.x or later (recommended to use Node.js 20.x or later)
-
-### Cloning the Repository
-
-Clone the repository using the following command:
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/TailAdmin/free-react-tailwind-admin-dashboard.git
+git clone <repository-url>
+cd cmpconion
 ```
 
-> Windows Users: place the repository near the root of your drive if you face issues while cloning.
+2. Install dependencies:
 
-1. Install dependencies:
+```bash
+bun install
+```
 
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+3. Create environment variables from the example file:
 
-2. Start the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
+```bash
+cp .env.example .env
+```
 
-## Components
+4. Fill in your Supabase credentials in `.env`:
 
-TailAdmin is a pre-designed starting point for building a web-based dashboard using React.js and Tailwind CSS. The
-template includes:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+```
 
-- Sophisticated and accessible sidebar
-- Data visualization components
-- Prebuilt profile management and 404 page
-- Tables and Charts(Line and Bar)
-- Authentication forms and input elements
-- Alerts, Dropdowns, Modals, Buttons and more
-- FAQ & Accordion, Testimonials, and Carousels
-- Can't forget Dark Mode 🕶️
+## Running Locally with Bun
 
-All components are built with React and styled using Tailwind CSS for easy customization.
+Start the development server:
 
-## Feature Comparison
+```bash
+bun run dev
+```
 
-### Free Version
+The app runs at `http://localhost:5173` by default.
 
-- 1 Unique Dashboard
-- 35+ dashboard components
-- 50+ UI elements
-- Basic Figma design files
-- Community support
+Other available scripts:
 
-### Pro Version
+```bash
+bun run build    # Type-check and build for production
+bun run preview  # Preview the production build locally
+bun run lint     # Run ESLint
+```
 
-- 7 Unique Dashboards: Analytics, Ecommerce, Marketing, CRM, SaaS, Stocks, Logistics (more coming soon)
-- 500+ dashboard components and UI elements
-- Complete Figma design file
-- Email support
+Sign in at `/signin` with your Supabase credentials. Protected routes (`/` and `/orders`) redirect unauthenticated users to the sign-in page.
 
-To learn more about pro version features and pricing, visit our [pricing page](https://tailadmin.com/pricing).
+## Tests
 
-## Changelog
+No automated test suite is configured yet. The project is structured to support unit and integration tests — service functions are plain async functions with no React dependencies, making them straightforward to test in isolation.
 
-### Version 2.3.0 - [April 28, 2026]
-- Added **AI Dashboard** with token usage and revenue tracking.
-- Added **Sales Dashboard** with retention and multi-channel analytics.
-- Added **Finance Dashboard** with cashflow and balance management.
-- Introduced **6 New Layout variations** for improved UI flexibility.
-- Integrated **Advanced Data Visualization** with 7+ new chart types.
+To add tests in the future, a common setup would be:
 
-### Version 2.1.0 - [Dec 30, 2025]
+```bash
+bun add -d vitest @testing-library/react @testing-library/jest-dom jsdom
+```
 
-- Resolved Date Picker positioning and input issues in Charts.
+## Architectural Decisions
 
-### Version 2.0.2 - [March 25, 2025]
+### API Abstraction Layer
 
-- Upgraded to React 19
-- Included overrides for packages to prevent peer dependency errors.
-- Migrated from react-flatpickr to flatpickr package for React 19 support
+Components never call Supabase directly. Data flows through three layers per feature:
 
-### Version 2.0.1 - [February 27, 2025]
+```
+React Component
+      ↓
+TanStack Query hooks  (*.query.ts)
+      ↓
+Service layer         (*.service.ts)
+      ↓
+Supabase client
+      ↓
+Database
+```
 
-#### Update Overview
+This keeps the UI decoupled from the data source. Replacing Supabase with a REST or GraphQL API would only require changes in the service layer.
 
-- Upgraded to Tailwind CSS v4 for better performance and efficiency.
-- Updated class usage to match the latest syntax and features.
-- Replaced deprecated class and optimized styles.
+### Feature-based folder structure
 
-#### Next Steps
+Each domain feature lives under `src/services/` with a consistent trio of files:
 
-- Run npm install or yarn install to update dependencies.
-- Check for any style changes or compatibility issues.
-- Refer to the Tailwind CSS v4 [Migration Guide](https://tailwindcss.com/docs/upgrade-guide) on this release. if needed.
-- This update keeps the project up to date with the latest Tailwind improvements. 🚀
+```
+src/services/
+├── dashboard/
+│   ├── dashboard.service.ts   # Supabase queries & data mapping
+│   ├── dashboard.query.ts     # TanStack Query hooks
+│   └── dashboard.types.ts     # Feature-specific types
+└── orders/
+    ├── orders.service.ts
+    ├── orders.query.ts
+    └── orders.types.ts
+```
 
-### Version 2.0.0 - [February 2025]
+Shared domain types (e.g. `Order`, `OrderStatus`) live in `src/domain/types/`. UI components consume only query hooks and domain types — never service functions or Supabase imports.
 
-A major update with comprehensive redesign and modern React patterns implementation.
+### Separation of concerns
 
-#### Major Improvements
+| Concern | Location |
+|---------|----------|
+| Data fetching & caching | `*.query.ts` + TanStack Query |
+| Database access & mapping | `*.service.ts` |
+| UI rendering | `src/components/`, `src/pages/` |
+| Local UI state (filters, modals) | Custom hooks (`useOrderFilters`, `useModal`) |
+| Auth session | `useAuth` hook |
+| Layout & navigation | `src/layout/` |
 
-- Complete UI redesign with modern React patterns
-- New features: collapsible sidebar, chat, and calendar
-- Improved performance and accessibility
-- Updated data visualization using ApexCharts
+### Protected routes
 
-#### Key Features
+`AppLayout` wraps all authenticated pages. It uses `useAuth` to check the Supabase session and redirects to `/signin` when unauthenticated.
 
-- Redesigned dashboards (Ecommerce, Analytics, Marketing, CRM)
-- Enhanced navigation with React Router integration
-- Advanced tables with sorting and filtering
-- Calendar with drag-and-drop support
-- New UI components and improved existing ones
+## State Management Approach
 
-#### Breaking Changes
+The app uses a layered state strategy rather than a global store:
 
-- Updated sidebar component API
-- Migrated charts to ApexCharts
-- Revised authentication system
+### Server state — TanStack Query
 
-[Read more](https://tailadmin.com/docs/update-logs/react) on this release.
+All remote data (dashboard metrics, order lists, order details, mutations) is managed by TanStack Query. The `QueryProvider` configures defaults:
 
-### Version 1.3.7 - [June 20, 2024]
+- `staleTime`: 1 minute
+- `gcTime`: 10 minutes
+- `retry`: 1
 
-#### Enhancements
+Query hooks handle loading, error, and cache invalidation. Mutations (create, update, status change) invalidate related query keys so the dashboard and order list stay in sync.
 
-1. Remove Repetition of DefaultLayout in every Pages
-2. Add ClickOutside Component for reduce repeated functionality in Header Message, Notification and User Dropdowns.
+### UI state — React Context
 
-### Version 1.3.6 - [Jan 31, 2024]
+React Context is used only for cross-cutting UI concerns:
 
-#### Enhancements
+- **ThemeContext** — light/dark mode, persisted to `localStorage`
+- **SidebarContext** — sidebar expand/collapse and mobile open state
 
-1. Integrate flatpickr in [Date Picker/Form Elements]
-2. Change color after select an option [Select Element/Form Elements].
-3. Make it functional [Multiselect Dropdown/Form Elements].
-4. Make best value editable [Pricing Table One/Pricing Table].
-5. Rearrange Folder structure.
+### Local state — `useState` + custom hooks
 
-### Version 1.2.0 - [Apr 28, 2023]
+Component-scoped and feature-scoped state uses `useState` via custom hooks:
 
-- Add Typescript in TailAdmin React.
+- `useOrderFilters` — search text, status/service filters, sort order
+- `useModal` — modal open/close
+- `useAuth` — authentication session and loading state
 
-### Version 1.0.0 - Initial Release - [Mar 13, 2023]
+Form state is handled by React Hook Form with Zod schemas for validation (e.g. sign-in form).
 
-- Initial release of TailAdmin React.
+## API / Data Approach
+
+### Supabase as backend
+
+The app connects to Supabase through a single client initialized in `src/utils/supabase.ts` using `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
+### Data model
+
+Key entities:
+
+- **orders** — guest service requests with status, payment status, service type, amount, room number, and timestamps
+- **customers** — guest records linked to orders; active guests are those without a `check_out` date
+
+### Service layer responsibilities
+
+Service functions (`orders.service.ts`, `dashboard.service.ts`):
+
+- Execute Supabase queries (`.from()`, `.select()`, filters, pagination)
+- Map database rows to domain types (e.g. `OrderRow` → `Order`)
+- Throw typed errors for the query layer to surface
+
+### Query layer responsibilities
+
+Query hooks (`orders.query.ts`, `dashboard.query.ts`):
+
+- Wrap service functions with `useQuery` / `useMutation`
+- Define query keys for cache management
+- Invalidate related queries on mutation success
+- Never import or call Supabase directly
+
+### Example data flow
+
+```ts
+// Component
+const { data, isLoading, error } = useOrdersList({ page: 1, pageSize: 10 });
+
+// Query hook (orders.query.ts)
+export function useOrdersList(params) {
+  return useQuery({
+    queryKey: getOrdersListQueryKey(params),
+    queryFn: () => getOrdersList(params),
+  });
+}
+
+// Service (orders.service.ts)
+export async function getOrdersList(params) {
+  const { data, error } = await supabase.from("orders").select(...);
+  // map rows → Order[], return paginated result
+}
+```
+
+## Project Structure
+
+```
+src/
+├── components/       # Reusable UI and feature components
+├── context/          # React Context providers (theme, sidebar, query)
+├── data/             # Constants and mock data
+├── domain/           # Shared types and interfaces
+├── hooks/            # Custom React hooks
+├── layout/           # App shell (header, sidebar, layout)
+├── pages/            # Route-level page components
+├── services/         # Feature services + query hooks
+│   ├── dashboard/
+│   └── orders/
+└── utils/            # Helpers (Supabase client, formatters, date ranges)
+```
 
 ## License
 
-TailAdmin React.js Free Version is released under the MIT License.
-
-## Support
-
-If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing
-and maintaining this template.
+MIT
